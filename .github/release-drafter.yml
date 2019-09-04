@@ -1,0 +1,16 @@
+name-template: v$NEXT_PATCH_VERSION
+tag-template: v$NEXT_PATCH_VERSION
+template: |
+    # What's Changed
+    $CHANGES
+categories:
+  - title: 🚀 Features
+    label: type/feature
+  - title: 🧰 BC Break
+    label: type/bc-break
+  - title: 🐛 Bug Fixes
+    label: type/bug
+  - title: 📖 Documentation
+    label: type/docs
+  - title: 📦 Dependency updates
+    label: dependencies
