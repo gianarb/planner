@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 )
 
 const Seq = "seq"
@@ -60,6 +61,51 @@ func (o *One) Name() string {
 func (o *One) Do(ctx context.Context) ([]Procedure, error) {
 	o.Seq <- "one"
 	return nil, nil
+}
+
+type FakeStep struct {
+	do   func(ctx context.Context) ([]Procedure, error)
+	name string
+}
+
+func (o *FakeStep) Name() string {
+	if o.name == "" {
+		return "fake"
+	}
+	return o.name
+}
+
+func (o *FakeStep) Do(ctx context.Context) ([]Procedure, error) {
+	return o.do(ctx)
+}
+
+func TestTriggerSchedulerTimeout(t *testing.T) {
+	ctx := context.Background()
+	ctx, cF := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cF()
+	p := &FakePlan{
+		P:       []Procedure{},
+		Counter: 0,
+	}
+	p.P = append(p.P, &FakeStep{
+		name: "sleep",
+		do: func(ctx context.Context) ([]Procedure, error) {
+			time.Sleep(210 * time.Millisecond)
+			return nil, nil
+		},
+	})
+	p.P = append(p.P, &FakeStep{
+		name: "sleep",
+		do: func(ctx context.Context) ([]Procedure, error) {
+			time.Sleep(210 * time.Millisecond)
+			return nil, nil
+		},
+	})
+	s := NewScheduler()
+	err := s.Execute(ctx, p)
+	if err != context.DeadlineExceeded {
+		t.Fatalf("expected to get an deadline exceeded error. we got %s", err)
+	}
 }
 
 func TestExecutionSingleStep(t *testing.T) {

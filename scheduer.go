@@ -40,6 +40,7 @@ func (s *Scheduler) Execute(ctx context.Context, p Plan) error {
 	}
 	logger.Info("Started execution plan " + p.Name())
 	s.stepCounter = 0
+
 	for {
 		steps, err := p.Create(ctx)
 		if err != nil {
@@ -62,15 +63,23 @@ func (s *Scheduler) Execute(ctx context.Context, p Plan) error {
 // react is a recursive function that goes over all the steps and the one
 // returned by previous steps until the plan does not return anymore steps
 func (s *Scheduler) react(ctx context.Context, steps []Procedure, logger *zap.Logger) error {
+	var innerSteps []Procedure
 	for _, step := range steps {
+		var err error
 		s.stepCounter = s.stepCounter + 1
 		if loggableS, ok := step.(Loggable); ok {
 			loggableS.WithLogger(logger)
 		}
-		innerSteps, err := step.Do(ctx)
-		if err != nil {
-			logger.Error("Step failed.", zap.String("step", step.Name()), zap.Error(err))
-			return err
+		select {
+		case <-ctx.Done():
+			logger.Error("Step not executed.", zap.String("step", step.Name()), zap.Error(ctx.Err()))
+			return ctx.Err()
+		default:
+			innerSteps, err = step.Do(ctx)
+			if err != nil {
+				logger.Error("Step failed.", zap.String("step", step.Name()), zap.Error(err))
+				return err
+			}
 		}
 		if len(innerSteps) > 0 {
 			if err := s.react(ctx, innerSteps, logger); err != nil {
