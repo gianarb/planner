@@ -1,20 +1,22 @@
-package planner
+package planner_test
 
 import (
 	"context"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gianarb/planner"
 )
 
 const Seq = "seq"
 
 type FakePlan struct {
-	P       []Procedure
+	P       []planner.Procedure
 	Counter int
 }
 
-func (p *FakePlan) Create(ctx context.Context) ([]Procedure, error) {
+func (p *FakePlan) Create(ctx context.Context) ([]planner.Procedure, error) {
 	if p.Counter > 0 {
 		return nil, nil
 	}
@@ -35,13 +37,13 @@ func (o *Two) Name() string {
 	return "two"
 }
 
-func (o *Two) Do(ctx context.Context) ([]Procedure, error) {
+func (o *Two) Do(ctx context.Context) ([]planner.Procedure, error) {
 	if o.Counter > 0 {
 		return nil, nil
 	}
 	o.Seq <- "two"
 	o.Counter++
-	return []Procedure{
+	return []planner.Procedure{
 		&One{
 			String: "from-two",
 			Seq:    o.Seq,
@@ -58,13 +60,13 @@ func (o *One) Name() string {
 	return "one"
 }
 
-func (o *One) Do(ctx context.Context) ([]Procedure, error) {
+func (o *One) Do(ctx context.Context) ([]planner.Procedure, error) {
 	o.Seq <- "one"
 	return nil, nil
 }
 
 type FakeStep struct {
-	do   func(ctx context.Context) ([]Procedure, error)
+	do   func(ctx context.Context) ([]planner.Procedure, error)
 	name string
 }
 
@@ -75,7 +77,7 @@ func (o *FakeStep) Name() string {
 	return o.name
 }
 
-func (o *FakeStep) Do(ctx context.Context) ([]Procedure, error) {
+func (o *FakeStep) Do(ctx context.Context) ([]planner.Procedure, error) {
 	return o.do(ctx)
 }
 
@@ -84,24 +86,24 @@ func TestTriggerSchedulerTimeout(t *testing.T) {
 	ctx, cF := context.WithTimeout(ctx, 200*time.Millisecond)
 	defer cF()
 	p := &FakePlan{
-		P:       []Procedure{},
+		P:       []planner.Procedure{},
 		Counter: 0,
 	}
 	p.P = append(p.P, &FakeStep{
 		name: "sleep",
-		do: func(ctx context.Context) ([]Procedure, error) {
+		do: func(ctx context.Context) ([]planner.Procedure, error) {
 			time.Sleep(210 * time.Millisecond)
 			return nil, nil
 		},
 	})
 	p.P = append(p.P, &FakeStep{
 		name: "sleep",
-		do: func(ctx context.Context) ([]Procedure, error) {
+		do: func(ctx context.Context) ([]planner.Procedure, error) {
 			time.Sleep(210 * time.Millisecond)
 			return nil, nil
 		},
 	})
-	s := NewScheduler()
+	s := planner.NewScheduler()
 	err := s.Execute(ctx, p)
 	if err != context.DeadlineExceeded {
 		t.Fatalf("expected to get an deadline exceeded error. we got %s", err)
@@ -114,13 +116,13 @@ func TestExecutionSingleStep(t *testing.T) {
 
 	ctx := context.Background()
 	p := &FakePlan{
-		P:       []Procedure{},
+		P:       []planner.Procedure{},
 		Counter: 0,
 	}
 	p.P = append(p.P, &One{
 		Seq: seq,
 	})
-	s := NewScheduler()
+	s := planner.NewScheduler()
 	s.Execute(ctx, p)
 	close(seq)
 	for ss := range seq {
@@ -137,13 +139,13 @@ func TestExecutionStepTwoThatReturnStepOne(t *testing.T) {
 
 	ctx := context.Background()
 	p := &FakePlan{
-		P:       []Procedure{},
+		P:       []planner.Procedure{},
 		Counter: 0,
 	}
 	p.P = append(p.P, &Two{
 		Seq: seq,
 	})
-	s := NewScheduler()
+	s := planner.NewScheduler()
 	s.Execute(ctx, p)
 	close(seq)
 	for ss := range seq {
@@ -160,7 +162,7 @@ func TestExecutionStepTwoAndStapOne(t *testing.T) {
 
 	ctx := context.Background()
 	p := &FakePlan{
-		P:       []Procedure{},
+		P:       []planner.Procedure{},
 		Counter: 0,
 	}
 	p.P = append(p.P, &Two{
@@ -170,7 +172,7 @@ func TestExecutionStepTwoAndStapOne(t *testing.T) {
 		Seq:    seq,
 		String: "plan",
 	})
-	s := NewScheduler()
+	s := planner.NewScheduler()
 	s.Execute(ctx, p)
 	close(seq)
 	for ss := range seq {
