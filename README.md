@@ -6,7 +6,8 @@ First what is reactive planning? I will leave you a few links:
 
 * [Reactive planning from Wikipedia](https://en.wikipedia.org/wiki/Reactive_planning)
 * [The book "Thinking in Systems"](https://gianarb.it/blog/thinking-in-systems-donella-meadows-review)
-* [Video ]()
+* [AWS re:Invent 2018: Close Loops & Opening Minds: How to Take Control of Systems, Big & Small ARC337](https://www.youtube.com/watch?v=O8xLxNje30M&feature=emb_title)
+* [Me explaining on Twitch this library with an example](https://www.twitch.tv/videos/770165588)
 
 ## Reactive planning implementation in planner
 
