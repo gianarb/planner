@@ -10,7 +10,6 @@ First what is reactive planning? I will leave you a few links:
 * [Me explaining on Twitch this library with an example](https://www.twitch.tv/videos/770165588)
 
 ## Reactive planning implementation in planner
-
 In short a reactive plan empower a humanoid robot the reconcile and stay up when
 you push it.
 
